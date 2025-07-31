@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { TagInput } from '@/components/TagInput';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -16,7 +17,7 @@ export default function CreatePost() {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [published, setPublished] = useState(false);
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -34,8 +35,6 @@ export default function CreatePost() {
 
     setLoading(true);
     try {
-      const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-      
       const { data, error } = await supabase
         .from('blog_posts')
         .insert({
@@ -43,7 +42,7 @@ export default function CreatePost() {
           content,
           excerpt: excerpt || null,
           published,
-          tags: tagsArray.length > 0 ? tagsArray : null,
+          tags: tags.length > 0 ? tags : null,
           author_id: user.id,
         })
         .select()
@@ -119,13 +118,15 @@ export default function CreatePost() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  placeholder="technology, programming, web development (comma-separated)"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                <Label>Tags</Label>
+                <TagInput 
+                  tags={tags} 
+                  onTagsChange={setTags}
+                  placeholder="Add tags to categorize your post..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Press Enter or click Add to add tags. Use tags to help readers find your content.
+                </p>
               </div>
 
               <div className="space-y-2">

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { TagInput } from '@/components/TagInput';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -27,7 +28,7 @@ export default function EditPost() {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [published, setPublished] = useState(false);
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function EditPost() {
       setContent(data.content);
       setExcerpt(data.excerpt || '');
       setPublished(data.published);
-      setTags(data.tags ? data.tags.join(', ') : '');
+      setTags(data.tags || []);
     } catch (error: any) {
       toast({
         title: "Error loading post",
@@ -81,8 +82,6 @@ export default function EditPost() {
 
     setSaving(true);
     try {
-      const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-      
       const { error } = await supabase
         .from('blog_posts')
         .update({
@@ -90,7 +89,7 @@ export default function EditPost() {
           content,
           excerpt: excerpt || null,
           published,
-          tags: tagsArray.length > 0 ? tagsArray : null,
+          tags: tags.length > 0 ? tags : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', post.id);
@@ -190,13 +189,15 @@ export default function EditPost() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  placeholder="technology, programming, web development (comma-separated)"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                <Label>Tags</Label>
+                <TagInput 
+                  tags={tags} 
+                  onTagsChange={setTags}
+                  placeholder="Add tags to categorize your post..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Press Enter or click Add to add tags. Use tags to help readers find your content.
+                </p>
               </div>
 
               <div className="space-y-2">

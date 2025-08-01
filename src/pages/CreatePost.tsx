@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { TagInput } from '@/components/TagInput';
+import { ImageUpload } from '@/components/ImageUpload';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -16,6 +18,7 @@ export default function CreatePost() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
   const [published, setPublished] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +44,7 @@ export default function CreatePost() {
           title,
           content,
           excerpt: excerpt || null,
+          featured_image_url: featuredImage || null,
           published,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
@@ -129,15 +133,18 @@ export default function CreatePost() {
                 </p>
               </div>
 
+              <ImageUpload
+                onImageUploaded={setFeaturedImage}
+                currentImage={featuredImage}
+                userId={user?.id || ''}
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="content">Content *</Label>
-                <Textarea
-                  id="content"
-                  placeholder="Write your blog post content here..."
+                <RichTextEditor
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={15}
-                  required
+                  onChange={setContent}
+                  placeholder="Write your blog post content here..."
                 />
               </div>
 

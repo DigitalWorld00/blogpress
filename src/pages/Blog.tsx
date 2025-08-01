@@ -15,6 +15,7 @@ interface BlogPost {
   title: string;
   content: string;
   excerpt: string | null;
+  featured_image_url: string | null;
   created_at: string;
   author_id: string;
   tags: string[] | null;
@@ -143,6 +144,15 @@ export default function Blog() {
           </div>
           
           <Card className="mb-8">
+            {selectedPost.featured_image_url && (
+              <div className="w-full h-64 overflow-hidden">
+                <img 
+                  src={selectedPost.featured_image_url} 
+                  alt={selectedPost.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
             <CardHeader>
               <CardTitle className="text-3xl">{selectedPost.title}</CardTitle>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -170,9 +180,10 @@ export default function Blog() {
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none mb-8">
-                <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-                  {selectedPost.content}
-                </div>
+                <div 
+                  className="text-foreground leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+                />
               </div>
             </CardContent>
           </Card>
@@ -249,6 +260,16 @@ export default function Blog() {
           <div className="grid gap-6">
             {filteredPosts.map((post) => (
               <Card key={post.id} className="hover:shadow-md transition-shadow">
+                {post.featured_image_url && (
+                  <div className="w-full h-48 overflow-hidden">
+                    <img 
+                      src={post.featured_image_url} 
+                      alt={post.title}
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => setSelectedPost(post)}
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <CardTitle 
                     className="text-2xl hover:text-primary cursor-pointer"
@@ -299,7 +320,7 @@ export default function Blog() {
                 <CardContent>
                   <div className="prose max-w-none">
                     <p className="line-clamp-3 text-muted-foreground">
-                      {post.content.slice(0, 200)}...
+                      {post.content.replace(/<[^>]*>/g, '').slice(0, 200)}...
                     </p>
                   </div>
                   <Button 

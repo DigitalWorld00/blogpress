@@ -94,6 +94,71 @@ export type Database = {
           },
         ]
       }
+      newsletter_subscribers: {
+        Row: {
+          active: boolean
+          email: string
+          id: string
+          subscribed_at: string
+          unsubscribe_token: string
+        }
+        Insert: {
+          active?: boolean
+          email: string
+          id?: string
+          subscribed_at?: string
+          unsubscribe_token?: string
+        }
+        Update: {
+          active?: boolean
+          email?: string
+          id?: string
+          subscribed_at?: string
+          unsubscribe_token?: string
+        }
+        Relationships: []
+      }
+      post_analytics: {
+        Row: {
+          comments: number
+          date: string
+          id: string
+          likes: number
+          post_id: string
+          shares: number
+          unique_views: number
+          views: number
+        }
+        Insert: {
+          comments?: number
+          date?: string
+          id?: string
+          likes?: number
+          post_id: string
+          shares?: number
+          unique_views?: number
+          views?: number
+        }
+        Update: {
+          comments?: number
+          date?: string
+          id?: string
+          likes?: number
+          post_id?: string
+          shares?: number
+          unique_views?: number
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analytics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string

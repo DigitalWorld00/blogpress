@@ -11,6 +11,7 @@ import { PostEngagement } from '@/components/PostEngagement';
 import { SocialShare } from '@/components/SocialShare';
 import { ReadingTime } from '@/components/ReadingTime';
 import { RelatedPosts } from '@/components/RelatedPosts';
+import { NewsletterSubscription } from '@/components/NewsletterSubscription';
 import { format } from 'date-fns';
 import { Search, User } from 'lucide-react';
 
@@ -280,19 +281,21 @@ export default function Blog() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
-            {filteredPosts.map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                {post.featured_image_url && (
-                  <div className="w-full h-48 overflow-hidden">
-                    <img 
-                      src={post.featured_image_url} 
-                      alt={post.title}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => setSelectedPost(post)}
-                    />
-                  </div>
-                )}
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="md:col-span-3">
+              <div className="grid gap-6">
+                {filteredPosts.map((post) => (
+                  <Card key={post.id} className="hover:shadow-md transition-shadow">
+                    {post.featured_image_url && (
+                      <div className="w-full h-48 overflow-hidden">
+                        <img 
+                          src={post.featured_image_url} 
+                          alt={post.title}
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => setSelectedPost(post)}
+                        />
+                      </div>
+                    )}
                 <CardHeader>
                   <CardTitle 
                     className="text-2xl hover:text-primary cursor-pointer"
@@ -365,8 +368,13 @@ export default function Blog() {
               </Card>
             ))}
           </div>
-        )}
+        </div>
+        <div className="space-y-6">
+          <NewsletterSubscription />
+        </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+</div>
+);
 }

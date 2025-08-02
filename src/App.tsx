@@ -11,6 +11,7 @@ import Blog from "./pages/Blog";
 import CreatePost from "./pages/CreatePost";
 import EditPost from "./pages/EditPost";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/create-post" element={<CreatePost />} />
             <Route path="/edit-post/:postId" element={<EditPost />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

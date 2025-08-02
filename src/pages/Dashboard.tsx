@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Edit, Trash2, Plus, Eye } from 'lucide-react';
+import { Edit, Trash2, Plus, Eye, Shield } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -20,6 +20,7 @@ interface BlogPost {
 export default function Dashboard() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('user');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -33,6 +34,18 @@ export default function Dashboard() {
 
   const fetchPosts = async () => {
     try {
+      // Fetch user role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (profile?.role) {
+        setUserRole(profile.role);
+      }
+
+      // Fetch user's posts
       const { data, error } = await supabase
         .from('blog_posts')
         .select('id, title, excerpt, published, created_at, updated_at')
@@ -100,6 +113,12 @@ export default function Dashboard() {
             <Badge variant="secondary">Dashboard</Badge>
           </div>
           <div className="flex items-center space-x-4">
+            {userRole === 'admin' && (
+              <Button onClick={() => navigate('/admin')} variant="outline">
+                <Shield className="h-4 w-4 mr-2" />
+                Admin Dashboard
+              </Button>
+            )}
             <Button onClick={() => navigate('/blog')} variant="outline">
               <Eye className="h-4 w-4 mr-2" />
               View Blog

@@ -13,13 +13,20 @@ interface BlogPost {
   featured_image_url: string | null;
   created_at: string;
   tags: string[] | null;
-  view_count: number;
+}
+
+interface FullBlogPost extends BlogPost {
+  content: string;
+  author_id: string;
+  profiles: {
+    display_name: string | null;
+  };
 }
 
 interface RelatedPostsProps {
   currentPostId: string;
   currentPostTags: string[] | null;
-  onPostSelect: (post: BlogPost) => void;
+  onPostSelect: (post: FullBlogPost) => void;
 }
 
 export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: RelatedPostsProps) {
@@ -34,7 +41,7 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
     try {
       let query = supabase
         .from('blog_posts')
-        .select('id, title, excerpt, featured_image_url, created_at, tags, view_count')
+        .select('id, title, excerpt, featured_image_url, created_at, tags')
         .eq('published', true)
         .neq('id', currentPostId)
         .limit(6);
@@ -62,9 +69,6 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
           (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60 * 24)
         );
         score += Math.max(0, 30 - daysSinceCreated); // Up to 30 points for recency
-        
-        // View count scoring (popular posts get slight boost)
-        score += Math.min(post.view_count || 0, 20); // Up to 20 points for popularity
         
         return { ...post, score };
       });
@@ -113,19 +117,36 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
         {relatedPosts.map((post) => (
           <Card key={post.id} className="hover:shadow-md transition-shadow cursor-pointer">
             {post.featured_image_url && (
-              <div className="h-32 overflow-hidden">
+               <div className="h-32 overflow-hidden">
                 <img 
                   src={post.featured_image_url} 
                   alt={post.title}
                   className="w-full h-full object-cover hover:scale-105 transition-transform"
-                  onClick={() => onPostSelect(post)}
+                  onClick={() => {
+                    const fullPost: FullBlogPost = {
+                      ...post,
+                      content: '',
+                      author_id: '',
+                      profiles: { display_name: null }
+                    };
+                    onPostSelect(fullPost);
+                  }}
                 />
               </div>
             )}
             <CardHeader className="pb-2">
               <CardTitle 
                 className="text-base line-clamp-2 hover:text-primary cursor-pointer"
-                onClick={() => onPostSelect(post)}
+                  onClick={() => {
+                    // Convert and fetch full post data
+                    const fullPost: FullBlogPost = {
+                      ...post,
+                      content: '', 
+                      author_id: '',
+                      profiles: { display_name: null }
+                    };
+                    onPostSelect(fullPost);
+                  }}
               >
                 {post.title}
               </CardTitle>
@@ -156,7 +177,16 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => onPostSelect(post)}
+                onClick={() => {
+                  // Convert BlogPost to FullBlogPost for compatibility
+                  const fullPost: FullBlogPost = {
+                    ...post,
+                    content: '', // Will be fetched when selected
+                    author_id: '',
+                    profiles: { display_name: null }
+                  };
+                  onPostSelect(fullPost);
+                }}
                 className="p-0 h-auto text-primary hover:text-primary-dark"
               >
                 Read more

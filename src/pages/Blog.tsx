@@ -7,6 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Comments } from '@/components/Comments';
 import { TagFilter } from '@/components/TagFilter';
+import { PostEngagement } from '@/components/PostEngagement';
+import { SocialShare } from '@/components/SocialShare';
+import { ReadingTime } from '@/components/ReadingTime';
+import { RelatedPosts } from '@/components/RelatedPosts';
 import { format } from 'date-fns';
 import { Search, User } from 'lucide-react';
 
@@ -155,7 +159,7 @@ export default function Blog() {
             )}
             <CardHeader>
               <CardTitle className="text-3xl">{selectedPost.title}</CardTitle>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                 <span>
                   Published on {format(new Date(selectedPost.created_at), 'MMMM dd, yyyy')}
                 </span>
@@ -167,9 +171,11 @@ export default function Blog() {
                   <User className="h-4 w-4" />
                   {selectedPost.profiles?.display_name || 'Anonymous'}
                 </Link>
+                <span>•</span>
+                <ReadingTime content={selectedPost.content} />
               </div>
               {selectedPost.tags && selectedPost.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2 mb-4">
                   {selectedPost.tags.map((tag) => (
                     <Badge key={tag} variant="secondary">
                       {tag}
@@ -177,6 +183,17 @@ export default function Blog() {
                   ))}
                 </div>
               )}
+              <div className="flex items-center gap-4 mb-4">
+                <PostEngagement 
+                  postId={selectedPost.id} 
+                  viewCount={0}
+                />
+                <SocialShare 
+                  title={selectedPost.title}
+                  url={window.location.href}
+                  excerpt={selectedPost.excerpt || undefined}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none mb-8">
@@ -187,6 +204,12 @@ export default function Blog() {
               </div>
             </CardContent>
           </Card>
+
+          <RelatedPosts 
+            currentPostId={selectedPost.id}
+            currentPostTags={selectedPost.tags}
+            onPostSelect={setSelectedPost}
+          />
 
           <Comments postId={selectedPost.id} />
         </div>
@@ -292,6 +315,8 @@ export default function Blog() {
                       <User className="h-4 w-4" />
                       {post.profiles?.display_name || 'Anonymous'}
                     </Link>
+                    <span>•</span>
+                    <ReadingTime content={post.content} />
                   </div>
                   {post.tags && post.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-2">
@@ -323,13 +348,19 @@ export default function Blog() {
                       {post.content.replace(/<[^>]*>/g, '').slice(0, 200)}...
                     </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setSelectedPost(post)}
-                  >
-                    Read More
-                  </Button>
+                  <div className="flex items-center justify-between mt-4">
+                    <PostEngagement 
+                      postId={post.id} 
+                      viewCount={0}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedPost(post)}
+                    >
+                      Read More
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

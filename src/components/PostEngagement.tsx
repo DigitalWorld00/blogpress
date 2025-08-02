@@ -25,29 +25,22 @@ export function PostEngagement({ postId, viewCount, onViewCountUpdate }: PostEng
 
   const fetchEngagementData = async () => {
     try {
-      // Fetch likes count using RPC or manual count since post_likes table might not be in types yet
-      const { data: likesData, error: likesError } = await supabase
-        .rpc('count_post_likes', { post_id: postId })
-        .single();
+      // Fetch likes count using RPC function
+      const { data: likesCount, error: likesError } = await supabase
+        .rpc('count_post_likes', { post_id: postId });
 
-      if (!likesError && likesData) {
-        setLikes(likesData);
-      } else {
-        // Fallback: direct query (might fail with types, but will work at runtime)
-        const response = await fetch(`/api/post-likes/count?postId=${postId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setLikes(data.count || 0);
-        }
+      if (!likesError && likesCount !== null) {
+        setLikes(likesCount);
       }
 
       // Check if current user liked the post
       if (user) {
-        const { data: userLike } = await supabase
-          .rpc('check_user_liked_post', { post_id: postId, user_id: user.id })
-          .single();
+        const { data: isLikedData, error: isLikedError } = await supabase
+          .rpc('check_user_liked_post', { post_id: postId, user_id: user.id });
 
-        setIsLiked(!!userLike);
+        if (!isLikedError && isLikedData !== null) {
+          setIsLiked(isLikedData);
+        }
       }
 
       // Fetch comments count
@@ -90,7 +83,7 @@ export function PostEngagement({ postId, viewCount, onViewCountUpdate }: PostEng
     setLoading(true);
     try {
       if (isLiked) {
-        // Unlike the post - use RPC function
+        // Unlike the post using RPC function
         const { error } = await supabase.rpc('unlike_post', { 
           post_id: postId, 
           user_id: user.id 
@@ -100,7 +93,7 @@ export function PostEngagement({ postId, viewCount, onViewCountUpdate }: PostEng
         setLikes(prev => prev - 1);
         setIsLiked(false);
       } else {
-        // Like the post - use RPC function
+        // Like the post using RPC function
         const { error } = await supabase.rpc('like_post', { 
           post_id: postId, 
           user_id: user.id 

@@ -27,6 +27,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string
+          view_count: number | null
         }
         Insert: {
           author_id: string
@@ -40,6 +41,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string
+          view_count?: number | null
         }
         Update: {
           author_id?: string
@@ -53,6 +55,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
+          view_count?: number | null
         }
         Relationships: []
       }
@@ -84,6 +87,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "blog_posts"
@@ -129,7 +161,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_user_liked_post: {
+        Args: { post_id: string; user_id: string }
+        Returns: boolean
+      }
+      count_post_likes: {
+        Args: { post_id: string }
+        Returns: number
+      }
+      increment_post_views: {
+        Args: { post_id: string }
+        Returns: undefined
+      }
+      like_post: {
+        Args: { post_id: string; user_id: string }
+        Returns: undefined
+      }
+      unlike_post: {
+        Args: { post_id: string; user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Comments } from '@/components/Comments';
 import { TagFilter } from '@/components/TagFilter';
 import { PostEngagement } from '@/components/PostEngagement';
@@ -12,8 +11,15 @@ import { SocialShare } from '@/components/SocialShare';
 import { ReadingTime } from '@/components/ReadingTime';
 import { RelatedPosts } from '@/components/RelatedPosts';
 import { NewsletterSubscription } from '@/components/NewsletterSubscription';
+import { SearchBar } from '@/components/SearchBar';
+import { CategoryFilter } from '@/components/CategoryFilter';
+import { BookmarkButton } from '@/components/BookmarkButton';
+import { ReadingListManager } from '@/components/ReadingListManager';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import { SEOHead } from '@/components/SEOHead';
+import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
-import { Search, User } from 'lucide-react';
+import { User, Grid, List } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -24,19 +30,29 @@ interface BlogPost {
   created_at: string;
   author_id: string;
   tags: string[] | null;
+  view_count: number;
+  reading_time: number;
+  is_featured: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
   profiles: {
     display_name: string | null;
   };
 }
 
 export default function Blog() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
+  const [searchResults, setSearchResults] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -44,7 +60,7 @@ export default function Blog() {
 
   useEffect(() => {
     filterPosts();
-  }, [posts, searchQuery, selectedTags]);
+  }, [posts, searchQuery, selectedTags, selectedCategories, searchResults]);
 
   const fetchPosts = async () => {
     try {
@@ -92,10 +108,11 @@ export default function Blog() {
   };
 
   const filterPosts = () => {
-    let filtered = posts;
+    // Use search results if advanced search was used
+    let filtered = searchResults.length > 0 ? searchResults : posts;
 
-    // Filter by search query
-    if (searchQuery.trim()) {
+    // Filter by basic search query
+    if (searchQuery.trim() && searchResults.length === 0) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(query) ||
@@ -112,7 +129,27 @@ export default function Blog() {
       );
     }
 
+    // Filter by selected categories
+    if (selectedCategories.length > 0) {
+      // This would require joining with post_categories table
+      // For now, we'll implement a simpler version
+      filtered = filtered.filter(post => {
+        // You could implement category filtering here
+        return true;
+      });
+    }
+
     setFilteredPosts(filtered);
+  };
+
+  const handleBasicSearch = (query: string) => {
+    setSearchQuery(query);
+    setSearchResults([]); // Clear advanced search results
+  };
+
+  const handleAdvancedSearch = (results: BlogPost[]) => {
+    setSearchResults(results);
+    setSearchQuery(''); // Clear basic search
   };
 
   const handleTagSelect = (tag: string) => {
@@ -139,13 +176,34 @@ export default function Blog() {
   }
 
   if (selectedPost) {
+    // Increment view count when viewing a post
+    useEffect(() => {
+      const incrementViews = async () => {
+        await supabase.rpc('increment_post_views', { post_id: selectedPost.id });
+      };
+      incrementViews();
+    }, [selectedPost.id]);
+
     return (
       <div className="min-h-screen bg-background">
+        <SEOHead
+          title={selectedPost.meta_title || selectedPost.title}
+          description={selectedPost.meta_description || selectedPost.excerpt || undefined}
+          type="article"
+          author={selectedPost.profiles?.display_name || undefined}
+          publishedTime={selectedPost.created_at}
+          tags={selectedPost.tags || undefined}
+          image={selectedPost.featured_image_url || undefined}
+        />
+        
         <div className="container mx-auto px-4 py-8">
-          <div className="mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <Button variant="outline" onClick={() => setSelectedPost(null)}>
               ← Back to Blog
             </Button>
+            <div className="flex items-center gap-2">
+              {user && <NotificationCenter />}
+            </div>
           </div>
           
           <Card className="mb-8">
@@ -174,6 +232,8 @@ export default function Blog() {
                 </Link>
                 <span>•</span>
                 <ReadingTime content={selectedPost.content} />
+                <span>•</span>
+                <span>{selectedPost.view_count} views</span>
               </div>
               {selectedPost.tags && selectedPost.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2 mb-4">
@@ -187,13 +247,19 @@ export default function Blog() {
               <div className="flex items-center gap-4 mb-4">
                 <PostEngagement 
                   postId={selectedPost.id} 
-                  viewCount={0}
+                  viewCount={selectedPost.view_count}
                 />
                 <SocialShare 
                   title={selectedPost.title}
                   url={window.location.href}
                   excerpt={selectedPost.excerpt || undefined}
                 />
+                {user && (
+                  <>
+                    <BookmarkButton postId={selectedPost.id} />
+                    <ReadingListManager postId={selectedPost.id} />
+                  </>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -220,27 +286,57 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Blog - Modern Blog Platform"
+        description="Discover amazing content on our modern blog platform with advanced features"
+      />
+      
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-foreground">Blog</h1>
-          <Link to="/">
-            <Button variant="outline">Back to Home</Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            {user && <NotificationCenter />}
+            <Link to="/">
+              <Button variant="outline">Back to Home</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Search and Filter Section */}
-        <div className="grid md:grid-cols-3 gap-8 mb-8">
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
+        <div className="space-y-6 mb-8">
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="md:col-span-2">
+              <SearchBar
+                onSearch={handleBasicSearch}
+                onAdvancedSearch={handleAdvancedSearch}
                 placeholder="Search posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                showAdvanced={true}
               />
             </div>
+            <div>
+              <CategoryFilter
+                selectedCategories={selectedCategories}
+                onCategoryChange={setSelectedCategories}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
+          
           <div>
             <TagFilter
               availableTags={allTags}
@@ -283,98 +379,113 @@ export default function Blog() {
         ) : (
           <div className="grid md:grid-cols-4 gap-8">
             <div className="md:col-span-3">
-              <div className="grid gap-6">
+              <div className={viewMode === 'grid' ? 'grid gap-6' : 'space-y-4'}>
                 {filteredPosts.map((post) => (
-                  <Card key={post.id} className="hover:shadow-md transition-shadow">
+                  <Card key={post.id} className={`hover:shadow-md transition-shadow ${post.is_featured ? 'border-primary' : ''}`}>
+                    {post.is_featured && (
+                      <div className="bg-primary text-primary-foreground px-3 py-1 text-xs font-medium">
+                        Featured
+                      </div>
+                    )}
                     {post.featured_image_url && (
-                      <div className="w-full h-48 overflow-hidden">
+                      <div className={`w-full overflow-hidden ${viewMode === 'grid' ? 'h-48' : 'h-32 md:h-48'}`}>
                         <img 
                           src={post.featured_image_url} 
                           alt={post.title}
-                          className="w-full h-full object-cover cursor-pointer"
+                          className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
                           onClick={() => setSelectedPost(post)}
                         />
                       </div>
                     )}
-                <CardHeader>
-                  <CardTitle 
-                    className="text-2xl hover:text-primary cursor-pointer"
-                    onClick={() => setSelectedPost(post)}
-                  >
-                    {post.title}
-                  </CardTitle>
-                  {post.excerpt && (
-                    <p className="text-muted-foreground">{post.excerpt}</p>
-                  )}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>
-                      Published on {format(new Date(post.created_at), 'MMMM dd, yyyy')}
-                    </span>
-                    <span>•</span>
-                    <Link 
-                      to={`/profile/${post.author_id}`}
-                      className="flex items-center gap-1 hover:text-primary"
-                    >
-                      <User className="h-4 w-4" />
-                      {post.profiles?.display_name || 'Anonymous'}
-                    </Link>
-                    <span>•</span>
-                    <ReadingTime content={post.content} />
-                  </div>
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {post.tags.slice(0, 5).map((tag) => (
-                        <Badge 
-                          key={tag} 
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-accent"
-                          onClick={() => {
-                            if (!selectedTags.includes(tag)) {
-                              setSelectedTags([...selectedTags, tag]);
-                            }
-                          }}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                      {post.tags.length > 5 && (
-                        <Badge variant="outline">
-                          +{post.tags.length - 5} more
-                        </Badge>
+                    <CardHeader>
+                      <CardTitle 
+                        className="text-2xl hover:text-primary cursor-pointer transition-colors"
+                        onClick={() => setSelectedPost(post)}
+                      >
+                        {post.title}
+                      </CardTitle>
+                      {post.excerpt && (
+                        <p className="text-muted-foreground">{post.excerpt}</p>
                       )}
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="prose max-w-none">
-                    <p className="line-clamp-3 text-muted-foreground">
-                      {post.content.replace(/<[^>]*>/g, '').slice(0, 200)}...
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <PostEngagement 
-                      postId={post.id} 
-                      viewCount={0}
-                    />
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedPost(post)}
-                    >
-                      Read More
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>
+                          Published on {format(new Date(post.created_at), 'MMMM dd, yyyy')}
+                        </span>
+                        <span>•</span>
+                        <Link 
+                          to={`/profile/${post.author_id}`}
+                          className="flex items-center gap-1 hover:text-primary"
+                        >
+                          <User className="h-4 w-4" />
+                          {post.profiles?.display_name || 'Anonymous'}
+                        </Link>
+                        <span>•</span>
+                        <ReadingTime content={post.content} />
+                        <span>•</span>
+                        <span>{post.view_count} views</span>
+                      </div>
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {post.tags.slice(0, 5).map((tag) => (
+                            <Badge 
+                              key={tag} 
+                              variant="secondary"
+                              className="cursor-pointer hover:bg-accent transition-colors"
+                              onClick={() => {
+                                if (!selectedTags.includes(tag)) {
+                                  setSelectedTags([...selectedTags, tag]);
+                                }
+                              }}
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {post.tags.length > 5 && (
+                            <Badge variant="outline">
+                              +{post.tags.length - 5} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose max-w-none">
+                        <p className="line-clamp-3 text-muted-foreground">
+                          {post.content.replace(/<[^>]*>/g, '').slice(0, 200)}...
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-2">
+                          <PostEngagement 
+                            postId={post.id} 
+                            viewCount={post.view_count}
+                          />
+                          {user && (
+                            <>
+                              <BookmarkButton postId={post.id} size="sm" />
+                              <ReadingListManager postId={post.id} />
+                            </>
+                          )}
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedPost(post)}
+                        >
+                          Read More
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-6">
+              <NewsletterSubscription />
+            </div>
           </div>
-        </div>
-        <div className="space-y-6">
-          <NewsletterSubscription />
-        </div>
+        )}
       </div>
-    )}
-  </div>
-</div>
+    </div>
 );
 }

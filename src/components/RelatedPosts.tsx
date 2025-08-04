@@ -115,6 +115,39 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
     return null;
   }
 
+  const handlePostClick = async (postId: string) => {
+    try {
+      const { data: postData, error: postError } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('id', postId)
+        .eq('published', true)
+        .single();
+
+      if (postError) throw postError;
+      
+      if (postData) {
+        // Fetch author profile separately
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', postData.author_id)
+          .single();
+
+        // Transform the data to match FullBlogPost interface
+        const fullPost: FullBlogPost = {
+          ...postData,
+          profiles: {
+            display_name: profileData?.display_name || null
+          }
+        };
+        onPostSelect(fullPost);
+      }
+    } catch (error) {
+      console.error('Error fetching full post:', error);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold">Related Posts</h3>
@@ -127,41 +160,14 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
                   src={post.featured_image_url} 
                   alt={post.title}
                   className="w-full h-full object-cover hover:scale-105 transition-transform"
-                  onClick={() => {
-                    const fullPost: FullBlogPost = {
-                      ...post,
-                      content: '',
-                      author_id: '',
-                      view_count: 0,
-                      reading_time: 0,
-                      is_featured: false,
-                      meta_title: null,
-                      meta_description: null,
-                      profiles: { display_name: null }
-                    };
-                    onPostSelect(fullPost);
-                  }}
+                  onClick={() => handlePostClick(post.id)}
                 />
               </div>
             )}
             <CardHeader className="pb-2">
               <CardTitle 
                 className="text-base line-clamp-2 hover:text-primary cursor-pointer"
-                  onClick={() => {
-                    // Convert and fetch full post data
-                    const fullPost: FullBlogPost = {
-                      ...post,
-                      content: '', 
-                      author_id: '',
-                      view_count: 0,
-                      reading_time: 0,
-                      is_featured: false,
-                      meta_title: null,
-                      meta_description: null,
-                      profiles: { display_name: null }
-                    };
-                    onPostSelect(fullPost);
-                  }}
+                onClick={() => handlePostClick(post.id)}
               >
                 {post.title}
               </CardTitle>
@@ -192,21 +198,7 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => {
-                  // Convert BlogPost to FullBlogPost for compatibility
-                  const fullPost: FullBlogPost = {
-                    ...post,
-                    content: '', // Will be fetched when selected
-                    author_id: '',
-                    view_count: 0,
-                    reading_time: 0,
-                    is_featured: false,
-                    meta_title: null,
-                    meta_description: null,
-                    profiles: { display_name: null }
-                  };
-                  onPostSelect(fullPost);
-                }}
+                onClick={() => handlePostClick(post.id)}
                 className="p-0 h-auto text-primary hover:text-primary-dark"
               >
                 Read more

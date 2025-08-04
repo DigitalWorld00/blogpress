@@ -18,6 +18,11 @@ interface BlogPost {
 interface FullBlogPost extends BlogPost {
   content: string;
   author_id: string;
+  view_count: number;
+  reading_time: number;
+  is_featured: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
   profiles: {
     display_name: string | null;
   };
@@ -127,6 +132,11 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
                       ...post,
                       content: '',
                       author_id: '',
+                      view_count: 0,
+                      reading_time: 0,
+                      is_featured: false,
+                      meta_title: null,
+                      meta_description: null,
                       profiles: { display_name: null }
                     };
                     onPostSelect(fullPost);
@@ -143,6 +153,11 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
                       ...post,
                       content: '', 
                       author_id: '',
+                      view_count: 0,
+                      reading_time: 0,
+                      is_featured: false,
+                      meta_title: null,
+                      meta_description: null,
                       profiles: { display_name: null }
                     };
                     onPostSelect(fullPost);
@@ -183,6 +198,11 @@ export function RelatedPosts({ currentPostId, currentPostTags, onPostSelect }: R
                     ...post,
                     content: '', // Will be fetched when selected
                     author_id: '',
+                    view_count: 0,
+                    reading_time: 0,
+                    is_featured: false,
+                    meta_title: null,
+                    meta_description: null,
                     profiles: { display_name: null }
                   };
                   onPostSelect(fullPost);

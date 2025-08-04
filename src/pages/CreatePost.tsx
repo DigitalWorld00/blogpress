@@ -27,7 +27,10 @@ export default function CreatePost() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with:', { title, content, published, user: user?.id });
+    
     if (!user) {
+      console.log('No user found, authentication required');
       toast({
         title: "Authentication required",
         description: "Please log in to create a post.",
@@ -36,21 +39,39 @@ export default function CreatePost() {
       return;
     }
 
+    if (!title.trim() || !content.trim()) {
+      console.log('Missing required fields:', { title: title.trim(), content: content.trim() });
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in the title and content fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    console.log('Starting to insert post...');
+    
     try {
+      const postData = {
+        title: title.trim(),
+        content: content.trim(),
+        excerpt: excerpt?.trim() || null,
+        featured_image_url: featuredImage || null,
+        published,
+        tags: tags.length > 0 ? tags : null,
+        author_id: user.id,
+      };
+      
+      console.log('Inserting post data:', postData);
+      
       const { data, error } = await supabase
         .from('blog_posts')
-        .insert({
-          title,
-          content,
-          excerpt: excerpt || null,
-          featured_image_url: featuredImage || null,
-          published,
-          tags: tags.length > 0 ? tags : null,
-          author_id: user.id,
-        })
+        .insert(postData)
         .select()
         .single();
+
+      console.log('Supabase response:', { data, error });
 
       if (error) throw error;
 
@@ -61,6 +82,7 @@ export default function CreatePost() {
 
       navigate('/dashboard');
     } catch (error: any) {
+      console.error('Error creating post:', error);
       toast({
         title: "Error creating post",
         description: error.message,

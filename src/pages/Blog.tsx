@@ -62,6 +62,16 @@ export default function Blog() {
     filterPosts();
   }, [posts, searchQuery, selectedTags, selectedCategories, searchResults]);
 
+  // Increment view count when viewing a post
+  useEffect(() => {
+    if (selectedPost) {
+      const incrementViews = async () => {
+        await supabase.rpc('increment_post_views', { post_id: selectedPost.id });
+      };
+      incrementViews();
+    }
+  }, [selectedPost?.id]);
+
   const fetchPosts = async () => {
     try {
       // First get blog posts
@@ -176,14 +186,6 @@ export default function Blog() {
   }
 
   if (selectedPost) {
-    // Increment view count when viewing a post
-    useEffect(() => {
-      const incrementViews = async () => {
-        await supabase.rpc('increment_post_views', { post_id: selectedPost.id });
-      };
-      incrementViews();
-    }, [selectedPost.id]);
-
     return (
       <div className="min-h-screen bg-background">
         <SEOHead
